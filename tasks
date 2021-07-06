@@ -1,0 +1,46 @@
+#!/bin/bash
+#
+# script to schedule tasks
+
+cd ~ || exit
+check_tasks(){
+  choice=$(echo -e "scheduled tasks\ncompleted tasks"\
+    | fzf --height 10%)
+  echo -e "\e[1;4;35m$choice\e[0m"
+  echo
+  echo
+  [ "$choice" == "completed tasks" ]\
+    && awk -F '-' '$1 == "c" { printf " \033[1;3;31m%s\033[0m\n \033[32m%s\033[0m\n \033[96m%s\033[0m\n\n", $2, $4, $3}' ~/tasks.txt
+  [ "$choice" == "scheduled tasks" ]\
+    && awk -F '-' '$1 == "s" { printf " \033[1;3;31m%s\033[0m\n \033[32m%s\033[0m\n \033[96m%s\033[0m\n\n", $2, $4, $3}' ~/tasks.txt
+}
+
+add_task(){
+  echo
+  read -rp "Enter the name of the task : " name
+  echo
+  echo "Enter the date and time all are in numeric values : "
+  read -rp "Year : " year
+  read -rp "Month : " month
+  read -rp "Day : " day
+  read -rp "Hour : " hour
+  read -rp "Minutes: " minutes
+  echo
+  read -rp "Description : " description 
+  [ -f "tasks.txt" ] || touch tasks.txt
+  echo "s-$name-$year $month $day $hour $minutes-$description" >> tasks.txt
+}
+
+task_complete(){
+  task=$(awk -F '-' '$1=="s" { print }' ~/tasks.txt\
+    | fzf --height 10%)
+  change_line=$(echo "$task" | sed 's/^./c/')
+  [ "$change_line" != "" ] && sed -i "s/$task/$change_line/" ~/tasks.txt
+}
+
+choice=$(echo -e "Add new task\nCheck a task\nMark a task as completed"\
+  | fzf --height 10%)
+
+[ "$choice" == "Add new task" ] && add_task
+[ "$choice" == "Check a task" ] && [ -f ~/tasks.txt ] && check_tasks
+[ "$choice" == "Mark a task as completed" ] && [ -f ~/tasks.txt ] && task_complete
